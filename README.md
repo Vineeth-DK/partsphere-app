@@ -1,6 +1,11 @@
 PartSphere:
 PartSphere is a full-stack e-commerce web application which enables users to exchange, rent, or buy heavy machineries or its spare parts from other users and companies. It has many features which are required in real-world marketplaces.
 
+<p align="center">
+  <img src="assets/homepage.png" width="400" />
+  <img src="assets/listing.png" width="400" />
+</p>
+
 Tech Stack:
 Frontend: React.js (Vite), Tailwind CSS, Lucide Icons
 
