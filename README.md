@@ -40,6 +40,15 @@ The backend automatically detects your environment and switches between a robust
 
 Purchases are done in an escrow manner where the amount is blocked until both parties verify that they have received their end of the bargain.
 
+<p align="center">
+  <img src="assets/dashboard.png" width="400" />
+  <img src="assets/adminpanel.png" width="400" />
+</p>
+<p align="center">
+  <img src="assets/buyer.png" width="400" />
+  <img src="assets/seller.png" width="400" />
+</p>
+
 Instructions and Tips:
 
 1. Install Dependencies
