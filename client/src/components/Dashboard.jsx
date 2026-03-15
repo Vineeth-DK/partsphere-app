@@ -56,16 +56,29 @@ const Dashboard = ({ user, onEdit, onDelete }) => {
 
             {activeTab === 'LISTINGS' && (
                 <div className="grid grid-cols-1 gap-4">
-                    {myItems.length === 0 && <p className="text-slate-400 italic">No items listed yet.</p>}
-                    {myItems.map(item => (
-                        <ItemCard key={item.id} part={item} currentUser={user} onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} onAddToCart={()=>{}} />
+                    {/* Safe check: Only show empty message if it's an array and length is 0 */}
+                    {Array.isArray(myItems) && myItems.length === 0 && (
+                         <p className="text-slate-400 italic">No items listed yet.</p>
+                    )}
+                    
+                    {/* Safe map: Only map if myItems is strictly an array */}
+                    {Array.isArray(myItems) && myItems.map(item => (
+                        <ItemCard 
+                            key={item.id} 
+                            part={item} 
+                            currentUser={user} 
+                            onEdit={() => onEdit(item)} 
+                            onDelete={() => onDelete(item.id)} 
+                            onAddToCart={()=>{}} 
+                        />
                     ))}
                 </div>
             )}
 
             {activeTab === 'ORDERS' && (
                 <div className="space-y-4">
-                    {orders.map(order => {
+                    {/* Safe map: Only map if orders is strictly an array */}
+                    {Array.isArray(orders) && orders.map(order => {
                         const isSeller = order.SellerId === user.id;
                         return (
                             <div key={order.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -89,7 +102,9 @@ const Dashboard = ({ user, onEdit, onDelete }) => {
                             </div>
                         );
                     })}
-                    {orders.length === 0 && <p className="text-slate-400 italic">No orders found.</p>}
+                    {(!Array.isArray(orders) || orders.length === 0) && (
+                        <p className="text-slate-400 italic">No orders found.</p>
+                    )}
                 </div>
             )}
 

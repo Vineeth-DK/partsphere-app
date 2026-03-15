@@ -70,8 +70,14 @@ const AdminDashboard = () => {
 
     const changeStatus = async (id, newStatus) => {
         if (window.confirm(`Mark user as ${newStatus}?`)) {
-            await api.post(`/admin/user/${id}/status`, { status: newStatus });
-            fetchData(); 
+            try {
+                await api.post(`/admin/user/${id}/status`, { status: newStatus });
+                alert(`Success! User has been ${newStatus}.`); // Add success feedback
+                fetchData(); 
+            } catch (error) {
+                console.error("Status Update Failed:", error);
+                alert("Failed to update user status. Check server console.");
+            }
         }
     };
 

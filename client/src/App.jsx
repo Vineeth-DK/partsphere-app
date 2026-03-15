@@ -70,25 +70,30 @@ function App() {
   // 1. CHECK ADMIN ROUTE FIRST
   const isAdminRoute = window.location.pathname === '/admin';
 
-  useEffect(() => {
+useEffect(() => {
     const u = localStorage.getItem('user_data');
     const t = localStorage.getItem('token');
-    if (u && t) setUser(JSON.parse(u));
-  }, []);
-
-  const fetchItems = (subcategory = '', query = '') => {
-    if (!location) return;
-    let endpoint = `/parts?location=${location}`;
     
-    if (!query && !subcategory) {
-        endpoint += `&category=${activeTab}`;
+    if (u && t) {
+        // 1. Immediately set the local user so the app loads fast
+        setUser(JSON.parse(u));
+        
+        // 2. Silently fetch the freshest data from the database in the background
+        api.get('/user/me')
+           .then(res => {
+               // Update React state
+               setUser(res.data);
+               // Overwrite the stale local storage with the new verified status
+               localStorage.setItem('user_data', JSON.stringify(res.data));
+           })
+           .catch(err => {
+               console.error("Session expired or invalid");
+               // If the token is dead, clear everything out
+               localStorage.clear();
+               setUser(null);
+           });
     }
-    
-    if (subcategory) endpoint += `&subcategory=${subcategory}`;
-    if (query) endpoint += `&search=${query}`;
-    
-    api.get(endpoint).then(res => setItems(res.data)).catch(console.error);
-  };
+  }, []);
 
   // --- GATEKEEPER ---
   const checkVerification = () => {
@@ -236,22 +241,22 @@ function App() {
                     <span className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full ml-auto">{items.length} Found</span>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                    {items.length > 0 ? items.map(item => (
-                        <ItemCard 
-                            key={item.id} 
-                            part={item} 
-                            currentUser={user} 
-                            onEdit={() => handleEditClick(item)} 
-                            onDelete={() => handleDeleteClick(item.id)} 
-                            onAddToCart={(i) => handleAddToCart(i)} 
-                        />
-                    )) : (
-                        <div className="text-center py-24 text-slate-400 border-2 border-dashed rounded-xl bg-white">
-                            <Search size={48} className="mx-auto mb-4 opacity-20" />
-                            <p className="text-lg font-medium">No items found.</p>
-                        </div>
-                    )}
-                </div>
+                {Array.isArray(items) && items.length > 0 ? items.map(item => (
+                    <ItemCard 
+                        key={item.id} 
+                        part={item} 
+                        currentUser={user} 
+                        onEdit={() => handleEditClick(item)} 
+                        onDelete={() => handleDeleteClick(item.id)} 
+                        onAddToCart={(i) => handleAddToCart(i)} 
+                    />
+                )) : (
+                    <div className="text-center py-24 text-slate-400 border-2 border-dashed rounded-xl bg-white">
+                        <Search size={48} className="mx-auto mb-4 opacity-20" />
+                        <p className="text-lg font-medium">No items found.</p>
+                    </div>
+                )}
+            </div>
             </div>
         )}
 

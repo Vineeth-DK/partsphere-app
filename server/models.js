@@ -3,18 +3,23 @@ const path = require('path');
 require('dotenv').config();
 
 let sequelize;
-const dbUrl = process.env.DATABASE_URL;
 
-if (dbUrl && dbUrl.startsWith('postgres')) {
-    sequelize = new Sequelize(dbUrl, {
+if (process.env.DATABASE_URL) {
+    console.log("🌐 Connecting to PostgreSQL...");
+    sequelize = new Sequelize(process.env.DATABASE_URL, {
         dialect: 'postgres',
-        logging: false,
-        dialectOptions: { ssl: { require: true, rejectUnauthorized: false } }
+        logging: false, // Set to true if you want to see the raw SQL queries
+        dialectOptions: { 
+            ssl: { require: true, rejectUnauthorized: false } 
+        }
     });
-} else {
+} 
+
+else {
+    console.log("📁 No Postgres URL found. Falling back to local SQLite database...");
     sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: path.join(__dirname, 'database.sqlite'),
+        storage: path.join(__dirname, 'database.sqlite'), // Creates a local file
         logging: false
     });
 }

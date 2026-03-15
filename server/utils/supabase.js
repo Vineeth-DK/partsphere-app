@@ -3,51 +3,51 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
+// 1. Check for Supabase Cloud Credentials
+let supabase;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+    console.log("☁️ Supabase credentials found! Connecting to cloud storage...");
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+} else {
+    console.log("📁 No Supabase credentials found. Images will be saved locally.");
+}
+
 const uploadToSupabase = async (file) => {
-    // 1. Validate Keys First
-    const hasKeys = process.env.SUPABASE_URL && process.env.SUPABASE_KEY;
-    // Basic check to ensure key isn't just an empty string or placeholder
-    const isValidKey = process.env.SUPABASE_KEY && process.env.SUPABASE_KEY.length > 20; 
+    // Sanitize the file name to remove weird spaces
+    const fileName = `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
 
-    if (!hasKeys || !isValidKey) {
-        console.log("⚠️ Using Local Storage (Supabase Keys missing or invalid)");
-        return saveLocally(file);
-    }
+    // 2. THE LOCAL FALLBACK
+    if (!supabase) {
+        // Ensure the uploads folder exists
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-    try {
-        // 2. Cloud Upload Attempt
-        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-        // Sanitize filename
-        const fileName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        // Save the raw buffer data from Multer directly to the hard drive
+        const filePath = path.join(uploadDir, fileName);
+        fs.writeFileSync(filePath, file.buffer);
         
-        const { error } = await supabase.storage
-            .from('partsphere-assets')
-            .upload(fileName, file.buffer, { contentType: file.mimetype });
-
-        if (error) throw error;
-
-        const { data } = supabase.storage
-            .from('partsphere-assets')
-            .getPublicUrl(fileName);
-            
-        return data.publicUrl;
-
-    } catch (err) {
-        console.error("⚠️ Cloud Upload Failed:", err.message);
-        console.log("🔄 Falling back to Local Storage...");
-        return saveLocally(file);
+        // Return the relative local path
+        return `/uploads/${fileName}`; 
     }
-};
 
-// Helper for Local Save
-const saveLocally = (file) => {
-    const fileName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    const uploadDir = path.join(__dirname, '../uploads');
+    // 3. THE CLOUD UPLOAD (If Supabase is configured)
+    const { data, error } = await supabase.storage
+        .from('partsphere') // Make sure you have a bucket named 'partsphere' in Supabase!
+        .upload(fileName, file.buffer, {
+            contentType: file.mimetype,
+        });
+
+    if (error) {
+        console.error("Supabase Error:", error);
+        throw new Error("Supabase Upload Failed: " + error.message);
+    }
     
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    
-    fs.writeFileSync(path.join(uploadDir, fileName), file.buffer);
-    return `/uploads/${fileName}`;
+    // Get the public URL to send back to the database
+    const { data: publicUrlData } = supabase.storage
+        .from('partsphere')
+        .getPublicUrl(fileName);
+
+    return publicUrlData.publicUrl;
 };
 
 module.exports = { uploadToSupabase };
